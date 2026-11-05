@@ -11,7 +11,7 @@ import {
   Circle,
   Flame,
   Clock,
-  Sparkles,
+  Bell,
   Target,
   BarChart2
 } from 'lucide-react';
@@ -148,11 +148,11 @@ export default function OverviewTab({
           </p>
         </div>
 
-        {/* COUNTDOWN CARD */}
+        {/* COUNTDOWN CARD (IKON REMINDER LONCENG) */}
         {nearestEvent ? (
           <div className="bg-slate-950/80 border border-indigo-500/30 rounded-xl p-3.5 flex items-center space-x-3.5 z-10 min-w-[210px] shadow-lg">
             <div className="bg-indigo-600/20 text-indigo-400 p-2.5 rounded-xl border border-indigo-500/30 flex-shrink-0">
-              <Sparkles className="w-5 h-5 animate-pulse" />
+              <Bell className="w-5 h-5" />
             </div>
             <div className="space-y-0.5">
               <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block">
@@ -449,7 +449,9 @@ export default function OverviewTab({
                 <div key={ev.id} className="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl flex justify-between items-center text-xs">
                   <div>
                     <p className="font-semibold text-slate-200">{ev.title}</p>
-                    <p className="text-[10px] text-slate-400">{ev.category} • {ev.date}</p>
+                    <p className="text-[10px] text-slate-400">
+                      {ev.category ? `${ev.category} • ` : ''}{ev.date}
+                    </p>
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
                     Agenda
