@@ -235,7 +235,7 @@ export default function OverviewTab({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         {/* GRAFIK KEUANGAN MINGGU INI */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
             <div className="flex items-center space-x-2">
               <BarChart2 className="w-4 h-4 text-indigo-400" />
@@ -255,7 +255,8 @@ export default function OverviewTab({
             </div>
           </div>
 
-          <div className="my-auto py-2">
+          {/* AREA GRAFIK DITENGAHKAN VERTIKAL DENGAN FLEX-1 & JUSTIFY-CENTER */}
+          <div className="flex-1 flex flex-col justify-center pt-3">
             <div className="grid grid-cols-7 gap-2 items-end h-28 border-b border-slate-800 pb-1.5">
               {currentWeekData.map((item, idx) => {
                 const expHeightPercent = Math.min(100, Math.round((item.expense / maxChartVal) * 100));
@@ -263,6 +264,7 @@ export default function OverviewTab({
 
                 return (
                   <div key={idx} className="flex justify-center items-end space-x-1 h-full group">
+                    {/* BAR PENGELUARAN */}
                     <div
                       style={{ height: `${Math.max(item.expense > 0 ? 8 : 4, expHeightPercent)}%` }}
                       className={`w-2.5 rounded-t transition-all ${
@@ -270,6 +272,7 @@ export default function OverviewTab({
                       }`}
                       title={`${item.dayLabel}: Keluar ${formatRupiah(item.expense)}`}
                     ></div>
+                    {/* BAR PEMASUKAN */}
                     <div
                       style={{ height: `${Math.max(item.income > 0 ? 8 : 4, incHeightPercent)}%` }}
                       className={`w-2.5 rounded-t transition-all ${
@@ -282,6 +285,7 @@ export default function OverviewTab({
               })}
             </div>
 
+            {/* LABEL HARI (SENIN - MINGGU) */}
             <div className="grid grid-cols-7 gap-2 pt-2 text-center">
               {currentWeekData.map((item, idx) => (
                 <span key={idx} className="text-[10px] text-slate-400 font-medium">
@@ -440,7 +444,7 @@ export default function OverviewTab({
           </div>
         </div>
 
-        {/* AGENDA TERDEKAT LIST (DAPAT DICENTANG/KLIK UNTUK MODAL DETAIL) */}
+        {/* AGENDA TERDEKAT LIST */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
             <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Agenda Terdekat</h4>
@@ -481,7 +485,6 @@ export default function OverviewTab({
       {selectedEvent && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            {/* Tombol Close */}
             <button
               onClick={() => setSelectedEvent(null)}
               className="absolute right-4 top-4 text-slate-400 hover:text-white p-1 rounded-lg transition"
@@ -489,7 +492,6 @@ export default function OverviewTab({
               <X className="w-5 h-5" />
             </button>
 
-            {/* Header Modal */}
             <div className="flex items-center space-x-3">
               <div className="p-2.5 bg-sky-500/10 text-sky-400 rounded-xl border border-sky-500/20">
                 <Calendar className="w-5 h-5" />
@@ -502,9 +504,7 @@ export default function OverviewTab({
               </div>
             </div>
 
-            {/* Informasi Detail */}
             <div className="space-y-3 bg-slate-950/70 p-4 rounded-xl border border-slate-800/80 text-xs">
-              {/* Tanggal & Countdown */}
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
                 <span className="text-slate-400 flex items-center space-x-1.5">
                   <Clock className="w-3.5 h-3.5 text-sky-400" />
@@ -527,7 +527,6 @@ export default function OverviewTab({
                 </div>
               </div>
 
-              {/* Kategori */}
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
                 <span className="text-slate-400 flex items-center space-x-1.5">
                   <Tag className="w-3.5 h-3.5 text-indigo-400" />
@@ -538,7 +537,6 @@ export default function OverviewTab({
                 </span>
               </div>
 
-              {/* Catatan / Deskripsi */}
               <div className="space-y-1.5 pt-1">
                 <span className="text-slate-400 flex items-center space-x-1.5">
                   <FileText className="w-3.5 h-3.5 text-amber-400" />
@@ -550,7 +548,6 @@ export default function OverviewTab({
               </div>
             </div>
 
-            {/* Tombol Tutup */}
             <button
               onClick={() => setSelectedEvent(null)}
               className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold py-3 rounded-xl transition border border-slate-700"
