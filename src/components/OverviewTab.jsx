@@ -35,8 +35,8 @@ export default function OverviewTab({
 }) {
   const username = data?.username || currentUser?.email?.split('@')[0] || 'Pengguna';
 
-  // STATE POPUP DETAIL AGENDA
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  // STATE POPUP DETAIL AGENDA (MENDUKUNG MULTI-AGENDA SEHARI)
+  const [selectedEventGroup, setSelectedEventGroup] = useState(null);
 
   // 1. UCAPAN WAKTU REAL-TIME & TANGGAL
   const [greeting, setGreeting] = useState('Selamat Pagi');
@@ -105,7 +105,7 @@ export default function OverviewTab({
     return max;
   }, [currentWeekData]);
 
-  // 3. COUNTDOWN EVENT TERDEKAT (MENDUKUNG MULTI-AGENDA DI HARI YANG SAMA)
+  // 3. COUNTDOWN EVENT TERDEKAT & GRUP AGENDA DI HARI YANG SAMA
   const nearestEventData = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -116,7 +116,8 @@ export default function OverviewTab({
         evDate.setHours(0, 0, 0, 0);
         const diffTime = evDate - today;
         const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return { ...ev, daysLeft };
+        const dateKey = `${evDate.getFullYear()}-${String(evDate.getMonth() + 1).padStart(2, '0')}-${String(evDate.getDate()).padStart(2, '0')}`;
+        return { ...ev, daysLeft, dateKey };
       })
       .filter((ev) => ev.daysLeft >= 0)
       .sort((a, b) => a.daysLeft - b.daysLeft);
@@ -124,15 +125,23 @@ export default function OverviewTab({
     if (upcoming.length === 0) return null;
 
     const firstEvent = upcoming[0];
-    const sameDayEvents = upcoming.filter((ev) => ev.date === firstEvent.date);
+    const sameDayEvents = upcoming.filter((ev) => ev.dateKey === firstEvent.dateKey);
 
     return {
       ...firstEvent,
+      sameDayEvents,
       extraCount: sameDayEvents.length - 1
     };
   }, [data?.planner?.events]);
 
   const habitsList = data?.planner?.habits || [];
+
+  // FUNGSI UNTUK MEMBUKA MODAL SEMUA AGENDA DI HARI YANG SAMA
+  const handleOpenDayEvents = (targetEv) => {
+    const allEvents = data?.planner?.events || [];
+    const sameDayEvents = allEvents.filter((ev) => ev.date === targetEv.date);
+    setSelectedEventGroup(sameDayEvents.length > 0 ? sameDayEvents : [targetEv]);
+  };
 
   return (
     <div className="space-y-6">
@@ -158,11 +167,11 @@ export default function OverviewTab({
           </p>
         </div>
 
-        {/* COUNTDOWN CARD (MINI CALENDAR BOX - CLEAN + MULTI AGENDA BADGE) */}
+        {/* COUNTDOWN CARD (MINI CALENDAR BOX + KLIK UNTUK LIHAT SEMUA AGENDA HARI INI) */}
         {nearestEventData ? (
           <div
-            onClick={() => setSelectedEvent(nearestEventData)}
-            className="bg-slate-950/90 border border-indigo-500/30 hover:border-indigo-500/60 transition cursor-pointer rounded-2xl p-3 flex items-center space-x-3.5 z-10 min-w-[230px] shadow-xl group"
+            onClick={() => setSelectedEventGroup(nearestEventData.sameDayEvents)}
+            className="bg-slate-950/90 border border-indigo-500/30 hover:border-indigo-500/60 transition cursor-pointer rounded-2xl p-3 flex items-center space-x-3.5 z-10 min-w-[240px] shadow-xl group"
           >
             {/* Blok Kalender Mini */}
             <div className="bg-gradient-to-b from-indigo-600 to-indigo-800 text-white rounded-xl px-2.5 py-1.5 min-w-[48px] text-center shadow-md border border-indigo-400/30 group-hover:scale-105 transition-transform flex-shrink-0">
@@ -174,7 +183,7 @@ export default function OverviewTab({
               </span>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 overflow-hidden">
               <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block leading-none">
                 Agenda Mendatang
               </span>
@@ -185,13 +194,13 @@ export default function OverviewTab({
                 </p>
 
                 {nearestEventData.extraCount > 0 && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex-shrink-0">
+                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex-shrink-0 shadow-sm">
                     +{nearestEventData.extraCount} agenda
                   </span>
                 )}
               </div>
 
-              {/* Status Clean Badge dengan Dot Pulse */}
+              {/* Status Clean Badge dengan Pulse Dot */}
               <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>
@@ -284,7 +293,6 @@ export default function OverviewTab({
             </div>
           </div>
 
-          {/* AREA GRAFIK DITURUNKAN KE BAWAH DENGAN PT-12 */}
           <div className="flex-1 flex flex-col justify-end pt-12 pb-1">
             <div className="grid grid-cols-7 gap-2 items-end h-28 border-b border-slate-800 pb-1.5">
               {currentWeekData.map((item, idx) => {
@@ -293,7 +301,6 @@ export default function OverviewTab({
 
                 return (
                   <div key={idx} className="flex justify-center items-end space-x-1 h-full group">
-                    {/* BAR PENGELUARAN */}
                     <div
                       style={{ height: `${Math.max(item.expense > 0 ? 8 : 4, expHeightPercent)}%` }}
                       className={`w-2.5 rounded-t transition-all ${
@@ -301,7 +308,6 @@ export default function OverviewTab({
                       }`}
                       title={`${item.dayLabel}: Keluar ${formatRupiah(item.expense)}`}
                     ></div>
-                    {/* BAR PEMASUKAN */}
                     <div
                       style={{ height: `${Math.max(item.income > 0 ? 8 : 4, incHeightPercent)}%` }}
                       className={`w-2.5 rounded-t transition-all ${
@@ -314,7 +320,6 @@ export default function OverviewTab({
               })}
             </div>
 
-            {/* LABEL HARI (SENIN - MINGGU) */}
             <div className="grid grid-cols-7 gap-2 pt-2 text-center">
               {currentWeekData.map((item, idx) => (
                 <span key={idx} className="text-[10px] text-slate-400 font-medium">
@@ -489,7 +494,7 @@ export default function OverviewTab({
               {eventsData.slice(0, 3).map((ev) => (
                 <div
                   key={ev.id}
-                  onClick={() => setSelectedEvent(ev)}
+                  onClick={() => handleOpenDayEvents(ev)}
                   className="p-2.5 bg-slate-950 border border-slate-800/80 hover:border-sky-500/50 hover:bg-slate-900/60 transition cursor-pointer rounded-xl flex justify-between items-center text-xs group"
                 >
                   <div>
@@ -510,76 +515,64 @@ export default function OverviewTab({
         </div>
       </div>
 
-      {/* MODAL POPUP DETAIL AGENDA */}
-      {selectedEvent && (
+      {/* MODAL POPUP DETAIL AGENDA (DUKUNGAN TAMPILAN MULTI-AGENDA SEHARI) */}
+      {selectedEventGroup && selectedEventGroup.length > 0 && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
+            {/* Tombol Tutup */}
             <button
-              onClick={() => setSelectedEvent(null)}
+              onClick={() => setSelectedEventGroup(null)}
               className="absolute right-4 top-4 text-slate-400 hover:text-white p-1 rounded-lg transition"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center space-x-3">
+            {/* Header Modal */}
+            <div className="flex items-center space-x-3 border-b border-slate-800/80 pb-3 flex-shrink-0">
               <div className="p-2.5 bg-sky-500/10 text-sky-400 rounded-xl border border-sky-500/20">
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
                 <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block">
-                  Detail Agenda
+                  {selectedEventGroup.length > 1
+                    ? `Agenda Hari Ini (${selectedEventGroup.length} Kegiatan)`
+                    : 'Detail Agenda'}
                 </span>
-                <h3 className="font-bold text-base text-white">{selectedEvent.title}</h3>
+                <h3 className="font-bold text-sm text-white">{selectedEventGroup[0]?.date}</h3>
               </div>
             </div>
 
-            <div className="space-y-3 bg-slate-950/70 p-4 rounded-xl border border-slate-800/80 text-xs">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                <span className="text-slate-400 flex items-center space-x-1.5">
-                  <Clock className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Pelaksanaan</span>
-                </span>
-                <div className="text-right">
-                  <p className="font-semibold text-slate-200">{selectedEvent.date}</p>
-                  <p className="text-[10px] font-medium text-emerald-400">
-                    {(() => {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const evDate = new Date(selectedEvent.date);
-                      evDate.setHours(0, 0, 0, 0);
-                      const diffDays = Math.ceil((evDate - today) / (1000 * 60 * 60 * 24));
-                      if (diffDays === 0) return 'Hari Ini!';
-                      if (diffDays > 0) return `⏳ ${diffDays} Hari Lagi`;
-                      return 'Sudah lewat';
-                    })()}
-                  </p>
+            {/* List Agenda Pada Hari Tersebut */}
+            <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+              {selectedEventGroup.map((ev, index) => (
+                <div
+                  key={ev.id || index}
+                  className="space-y-2 bg-slate-950/80 p-4 rounded-xl border border-slate-800/90 text-xs shadow-inner"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-800/60 pb-2">
+                    <h4 className="font-bold text-sm text-white">{ev.title}</h4>
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium text-[10px]">
+                      {ev.category || 'Sekolah'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1 pt-1">
+                    <span className="text-slate-400 flex items-center space-x-1.5 text-[11px]">
+                      <FileText className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Catatan / Deskripsi</span>
+                    </span>
+                    <p className="text-slate-300 bg-slate-900/90 p-2.5 rounded-lg border border-slate-800/80 leading-relaxed text-xs">
+                      {ev.note || ev.description || 'Tidak ada catatan tambahan untuk agenda ini.'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                <span className="text-slate-400 flex items-center space-x-1.5">
-                  <Tag className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Kategori</span>
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium text-[11px]">
-                  {selectedEvent.category || 'Sekolah'}
-                </span>
-              </div>
-
-              <div className="space-y-1.5 pt-1">
-                <span className="text-slate-400 flex items-center space-x-1.5">
-                  <FileText className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Catatan / Deskripsi</span>
-                </span>
-                <p className="text-slate-300 bg-slate-900/90 p-3 rounded-lg border border-slate-800/80 leading-relaxed text-xs">
-                  {selectedEvent.note || selectedEvent.description || 'Tidak ada catatan tambahan untuk agenda ini.'}
-                </p>
-              </div>
+              ))}
             </div>
 
+            {/* Tombol Tutup */}
             <button
-              onClick={() => setSelectedEvent(null)}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold py-3 rounded-xl transition border border-slate-700"
+              onClick={() => setSelectedEventGroup(null)}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold py-3 rounded-xl transition border border-slate-700 flex-shrink-0"
             >
               Tutup
             </button>
