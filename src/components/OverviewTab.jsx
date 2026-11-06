@@ -105,8 +105,8 @@ export default function OverviewTab({
     return max;
   }, [currentWeekData]);
 
-  // 3. COUNTDOWN EVENT TERDEKAT FOR BANNER
-  const nearestEvent = useMemo(() => {
+  // 3. COUNTDOWN EVENT TERDEKAT (MENDUKUNG MULTI-AGENDA DI HARI YANG SAMA)
+  const nearestEventData = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -121,7 +121,15 @@ export default function OverviewTab({
       .filter((ev) => ev.daysLeft >= 0)
       .sort((a, b) => a.daysLeft - b.daysLeft);
 
-    return upcoming[0] || null;
+    if (upcoming.length === 0) return null;
+
+    const firstEvent = upcoming[0];
+    const sameDayEvents = upcoming.filter((ev) => ev.date === firstEvent.date);
+
+    return {
+      ...firstEvent,
+      extraCount: sameDayEvents.length - 1
+    };
   }, [data?.planner?.events]);
 
   const habitsList = data?.planner?.habits || [];
@@ -150,19 +158,19 @@ export default function OverviewTab({
           </p>
         </div>
 
-        {/* COUNTDOWN CARD (MINI CALENDAR BOX - CLEAN VERSION) */}
-        {nearestEvent ? (
+        {/* COUNTDOWN CARD (MINI CALENDAR BOX - CLEAN + MULTI AGENDA BADGE) */}
+        {nearestEventData ? (
           <div
-            onClick={() => setSelectedEvent(nearestEvent)}
-            className="bg-slate-950/90 border border-indigo-500/30 hover:border-indigo-500/60 transition cursor-pointer rounded-2xl p-3 flex items-center space-x-3.5 z-10 min-w-[220px] shadow-xl group"
+            onClick={() => setSelectedEvent(nearestEventData)}
+            className="bg-slate-950/90 border border-indigo-500/30 hover:border-indigo-500/60 transition cursor-pointer rounded-2xl p-3 flex items-center space-x-3.5 z-10 min-w-[230px] shadow-xl group"
           >
             {/* Blok Kalender Mini */}
             <div className="bg-gradient-to-b from-indigo-600 to-indigo-800 text-white rounded-xl px-2.5 py-1.5 min-w-[48px] text-center shadow-md border border-indigo-400/30 group-hover:scale-105 transition-transform flex-shrink-0">
               <span className="block text-[9px] font-bold uppercase tracking-wider text-indigo-200 leading-none">
-                {new Date(nearestEvent.date).toLocaleDateString('id-ID', { month: 'short' })}
+                {new Date(nearestEventData.date).toLocaleDateString('id-ID', { month: 'short' })}
               </span>
               <span className="block text-base font-black leading-tight mt-0.5">
-                {new Date(nearestEvent.date).getDate()}
+                {new Date(nearestEventData.date).getDate()}
               </span>
             </div>
 
@@ -170,17 +178,26 @@ export default function OverviewTab({
               <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block leading-none">
                 Agenda Mendatang
               </span>
-              <p className="text-xs font-bold text-white truncate max-w-[130px] group-hover:text-indigo-300 transition-colors">
-                {nearestEvent.title}
-              </p>
+              
+              <div className="flex items-center space-x-1.5">
+                <p className="text-xs font-bold text-white truncate max-w-[110px] group-hover:text-indigo-300 transition-colors">
+                  {nearestEventData.title}
+                </p>
+
+                {nearestEventData.extraCount > 0 && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex-shrink-0">
+                    +{nearestEventData.extraCount} agenda
+                  </span>
+                )}
+              </div>
 
               {/* Status Clean Badge dengan Dot Pulse */}
               <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>
-                  {nearestEvent.daysLeft === 0
+                  {nearestEventData.daysLeft === 0
                     ? 'Hari Ini!'
-                    : `${nearestEvent.daysLeft} Hari Lagi`}
+                    : `${nearestEventData.daysLeft} Hari Lagi`}
                 </span>
               </div>
             </div>
@@ -267,7 +284,7 @@ export default function OverviewTab({
             </div>
           </div>
 
-          {/* AREA GRAFIK SIMETRIS DENGAN PT-12 */}
+          {/* AREA GRAFIK DITURUNKAN KE BAWAH DENGAN PT-12 */}
           <div className="flex-1 flex flex-col justify-end pt-12 pb-1">
             <div className="grid grid-cols-7 gap-2 items-end h-28 border-b border-slate-800 pb-1.5">
               {currentWeekData.map((item, idx) => {
