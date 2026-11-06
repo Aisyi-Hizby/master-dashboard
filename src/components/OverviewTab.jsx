@@ -235,7 +235,7 @@ export default function OverviewTab({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         {/* GRAFIK KEUANGAN MINGGU INI */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between min-h-[260px]">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
             <div className="flex items-center space-x-2">
               <BarChart2 className="w-4 h-4 text-indigo-400" />
@@ -255,8 +255,8 @@ export default function OverviewTab({
             </div>
           </div>
 
-          {/* AREA GRAFIK DITENGAHKAN VERTIKAL DENGAN FLEX-1 & JUSTIFY-CENTER */}
-          <div className="flex-1 flex flex-col justify-center pt-3">
+          {/* AREA GRAFIK DITURUNKAN KE BAWAH DENGAN PT-8 & MY-AUTO */}
+          <div className="my-auto pt-8 pb-1">
             <div className="grid grid-cols-7 gap-2 items-end h-28 border-b border-slate-800 pb-1.5">
               {currentWeekData.map((item, idx) => {
                 const expHeightPercent = Math.min(100, Math.round((item.expense / maxChartVal) * 100));
@@ -297,7 +297,7 @@ export default function OverviewTab({
         </div>
 
         {/* WIDGET CHECKLIST KEBIASAAN HARI INI */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between min-h-[260px]">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
             <div className="flex items-center space-x-2">
               <Flame className="w-4 h-4 text-amber-400" />
