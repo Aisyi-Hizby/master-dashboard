@@ -432,19 +432,19 @@ export default function OverviewTab({
           </div>
         </div>
 
-        {/* AGENDA TERDEKAT LIST */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+        {/* AGENDA TERDEKAT LIST (POSISI ATAS MODIFIED) */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
             <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Agenda Terdekat</h4>
             <span className="text-[10px] text-slate-500">{eventsData.length} Agenda</span>
           </div>
 
           {eventsData.length === 0 ? (
-            <div className="my-auto py-8 text-center">
+            <div className="py-8 text-center">
               <p className="text-xs text-slate-500">Belum ada agenda tersimpan</p>
             </div>
           ) : (
-            <div className="space-y-2 my-auto">
+            <div className="space-y-2">
               {eventsData.slice(0, 3).map((ev) => (
                 <div key={ev.id} className="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl flex justify-between items-center text-xs">
                   <div>
