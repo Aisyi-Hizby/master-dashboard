@@ -255,8 +255,8 @@ export default function OverviewTab({
             </div>
           </div>
 
-          {/* AREA GRAFIK DITURUNKAN KE BAWAH DENGAN PT-8 & MY-AUTO */}
-          <div className="my-auto pt-8 pb-1">
+          {/* AREA GRAFIK DITURUNKAN LEBIH BAWAH DENGAN JUSTIFY-END DAN PT-12 */}
+          <div className="flex-1 flex flex-col justify-end pt-12 pb-1">
             <div className="grid grid-cols-7 gap-2 items-end h-28 border-b border-slate-800 pb-1.5">
               {currentWeekData.map((item, idx) => {
                 const expHeightPercent = Math.min(100, Math.round((item.expense / maxChartVal) * 100));
