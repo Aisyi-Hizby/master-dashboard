@@ -13,7 +13,10 @@ import {
   Clock,
   Bell,
   Target,
-  BarChart2
+  BarChart2,
+  X,
+  Tag,
+  FileText
 } from 'lucide-react';
 
 export default function OverviewTab({
@@ -31,6 +34,9 @@ export default function OverviewTab({
   handleToggleHabit
 }) {
   const username = data?.username || currentUser?.email?.split('@')[0] || 'Pengguna';
+
+  // STATE POPUP DETAIL AGENDA
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   // 1. UCAPAN WAKTU REAL-TIME & TANGGAL
   const [greeting, setGreeting] = useState('Selamat Pagi');
@@ -60,7 +66,6 @@ export default function OverviewTab({
     const result = [];
     const txs = data?.finance?.transactions || [];
 
-    // Cari tanggal hari Senin pada minggu ini
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0 = Minggu, 1 = Senin, dst.
     const distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -68,13 +73,10 @@ export default function OverviewTab({
     const monday = new Date(now);
     monday.setDate(now.getDate() + distanceToMonday);
 
-    // Loop 7 hari dari Senin (i=0) hingga Minggu (i=6)
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       const dateStr = d.toISOString().split('T')[0];
-
-      // Ambil nama hari singkat Bahasa Indonesia
       const dayLabel = d.toLocaleDateString('id-ID', { weekday: 'short' });
 
       const dayExpense = txs
@@ -103,7 +105,7 @@ export default function OverviewTab({
     return max;
   }, [currentWeekData]);
 
-  // 3. COUNTDOWN EVENT TERDEKAT
+  // 3. COUNTDOWN EVENT TERDEKAT FOR BANNER
   const nearestEvent = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -150,15 +152,20 @@ export default function OverviewTab({
 
         {/* COUNTDOWN CARD (IKON REMINDER LONCENG) */}
         {nearestEvent ? (
-          <div className="bg-slate-950/80 border border-indigo-500/30 rounded-xl p-3.5 flex items-center space-x-3.5 z-10 min-w-[210px] shadow-lg">
-            <div className="bg-indigo-600/20 text-indigo-400 p-2.5 rounded-xl border border-indigo-500/30 flex-shrink-0">
+          <div
+            onClick={() => setSelectedEvent(nearestEvent)}
+            className="bg-slate-950/80 border border-indigo-500/30 hover:border-indigo-500/60 transition cursor-pointer rounded-xl p-3.5 flex items-center space-x-3.5 z-10 min-w-[210px] shadow-lg group"
+          >
+            <div className="bg-indigo-600/20 text-indigo-400 p-2.5 rounded-xl border border-indigo-500/30 flex-shrink-0 group-hover:scale-105 transition-transform">
               <Bell className="w-5 h-5" />
             </div>
             <div className="space-y-0.5">
               <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block">
                 Agenda Mendatang
               </span>
-              <p className="text-xs font-bold text-white truncate max-w-[140px]">{nearestEvent.title}</p>
+              <p className="text-xs font-bold text-white truncate max-w-[140px] group-hover:text-indigo-300 transition-colors">
+                {nearestEvent.title}
+              </p>
               <p className="text-[11px] font-semibold text-emerald-400">
                 {nearestEvent.daysLeft === 0
                   ? ' Hari Ini!'
@@ -224,11 +231,11 @@ export default function OverviewTab({
         </div>
       </div>
 
-      {/* BARIS KEDUA: GRAFIK KEUANGAN (SENIN - MINGGU) & HABIT CHECKLIST */}
+      {/* BARIS KEDUA: GRAFIK KEUANGAN & HABIT CHECKLIST */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         {/* GRAFIK KEUANGAN MINGGU INI */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
             <div className="flex items-center space-x-2">
               <BarChart2 className="w-4 h-4 text-indigo-400" />
@@ -248,35 +255,40 @@ export default function OverviewTab({
             </div>
           </div>
 
-          <div className="h-36 flex items-end justify-between pt-4 px-2 space-x-2">
-            {currentWeekData.map((item, idx) => {
-              const expHeightPercent = Math.min(100, Math.round((item.expense / maxChartVal) * 100));
-              const incHeightPercent = Math.min(100, Math.round((item.income / maxChartVal) * 100));
+          <div className="my-auto py-2">
+            <div className="grid grid-cols-7 gap-2 items-end h-28 border-b border-slate-800 pb-1.5">
+              {currentWeekData.map((item, idx) => {
+                const expHeightPercent = Math.min(100, Math.round((item.expense / maxChartVal) * 100));
+                const incHeightPercent = Math.min(100, Math.round((item.income / maxChartVal) * 100));
 
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group">
-                  <div className="w-full flex justify-center items-end space-x-1 h-28 border-b border-slate-800 pb-1">
-                    {/* BAR PENGELUARAN */}
+                return (
+                  <div key={idx} className="flex justify-center items-end space-x-1 h-full group">
                     <div
-                      style={{ height: `${Math.max(item.expense > 0 ? 8 : 2, expHeightPercent)}%` }}
+                      style={{ height: `${Math.max(item.expense > 0 ? 8 : 4, expHeightPercent)}%` }}
                       className={`w-2.5 rounded-t transition-all ${
-                        item.expense > 0 ? 'bg-rose-500 group-hover:bg-rose-400' : 'bg-slate-800'
+                        item.expense > 0 ? 'bg-rose-500 group-hover:bg-rose-400' : 'bg-slate-800/60'
                       }`}
                       title={`${item.dayLabel}: Keluar ${formatRupiah(item.expense)}`}
                     ></div>
-                    {/* BAR PEMASUKAN */}
                     <div
-                      style={{ height: `${Math.max(item.income > 0 ? 8 : 2, incHeightPercent)}%` }}
+                      style={{ height: `${Math.max(item.income > 0 ? 8 : 4, incHeightPercent)}%` }}
                       className={`w-2.5 rounded-t transition-all ${
-                        item.income > 0 ? 'bg-emerald-500 group-hover:bg-emerald-400' : 'bg-slate-800'
+                        item.income > 0 ? 'bg-emerald-500 group-hover:bg-emerald-400' : 'bg-slate-800/60'
                       }`}
                       title={`${item.dayLabel}: Masuk ${formatRupiah(item.income)}`}
                     ></div>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-medium mt-1.5">{item.dayLabel}</span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2 pt-2 text-center">
+              {currentWeekData.map((item, idx) => (
+                <span key={idx} className="text-[10px] text-slate-400 font-medium">
+                  {item.dayLabel}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -354,7 +366,6 @@ export default function OverviewTab({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {/* CATAT TRANSAKSI */}
             <button
               onClick={() => setModalOpen('tx')}
               className="p-3.5 bg-slate-950/80 hover:bg-slate-800/90 border border-slate-800 hover:border-indigo-500/40 rounded-xl text-left transition group relative overflow-hidden flex flex-col justify-between space-y-2 shadow-sm"
@@ -373,7 +384,6 @@ export default function OverviewTab({
               </div>
             </button>
 
-            {/* TAMBAH JUALAN */}
             <button
               onClick={() => setModalOpen('sales')}
               className="p-3.5 bg-slate-950/80 hover:bg-slate-800/90 border border-slate-800 hover:border-emerald-500/40 rounded-xl text-left transition group relative overflow-hidden flex flex-col justify-between space-y-2 shadow-sm"
@@ -392,7 +402,6 @@ export default function OverviewTab({
               </div>
             </button>
 
-            {/* TAMBAH AGENDA */}
             <button
               onClick={() => setModalOpen('event')}
               className="p-3.5 bg-slate-950/80 hover:bg-slate-800/90 border border-slate-800 hover:border-sky-500/40 rounded-xl text-left transition group relative overflow-hidden flex flex-col justify-between space-y-2 shadow-sm"
@@ -411,7 +420,6 @@ export default function OverviewTab({
               </div>
             </button>
 
-            {/* CATAT KEDIS */}
             <button
               onClick={() => setModalOpen('kedis')}
               className="p-3.5 bg-slate-950/80 hover:bg-slate-800/90 border border-slate-800 hover:border-rose-500/40 rounded-xl text-left transition group relative overflow-hidden flex flex-col justify-between space-y-2 shadow-sm"
@@ -432,7 +440,7 @@ export default function OverviewTab({
           </div>
         </div>
 
-        {/* AGENDA TERDEKAT LIST (POSISI ATAS MODIFIED) */}
+        {/* AGENDA TERDEKAT LIST (DAPAT DICENTANG/KLIK UNTUK MODAL DETAIL) */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
             <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Agenda Terdekat</h4>
@@ -446,14 +454,20 @@ export default function OverviewTab({
           ) : (
             <div className="space-y-2">
               {eventsData.slice(0, 3).map((ev) => (
-                <div key={ev.id} className="p-2.5 bg-slate-950 border border-slate-800/80 rounded-xl flex justify-between items-center text-xs">
+                <div
+                  key={ev.id}
+                  onClick={() => setSelectedEvent(ev)}
+                  className="p-2.5 bg-slate-950 border border-slate-800/80 hover:border-sky-500/50 hover:bg-slate-900/60 transition cursor-pointer rounded-xl flex justify-between items-center text-xs group"
+                >
                   <div>
-                    <p className="font-semibold text-slate-200">{ev.title}</p>
+                    <p className="font-semibold text-slate-200 group-hover:text-sky-300 transition-colors">
+                      {ev.title}
+                    </p>
                     <p className="text-[10px] text-slate-400">
                       {ev.category ? `${ev.category} • ` : ''}{ev.date}
                     </p>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 group-hover:border-sky-500/40 transition">
                     Agenda
                   </span>
                 </div>
@@ -462,6 +476,90 @@ export default function OverviewTab({
           )}
         </div>
       </div>
+
+      {/* MODAL POPUP DETAIL AGENDA */}
+      {selectedEvent && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            {/* Tombol Close */}
+            <button
+              onClick={() => setSelectedEvent(null)}
+              className="absolute right-4 top-4 text-slate-400 hover:text-white p-1 rounded-lg transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header Modal */}
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 bg-sky-500/10 text-sky-400 rounded-xl border border-sky-500/20">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider block">
+                  Detail Agenda
+                </span>
+                <h3 className="font-bold text-base text-white">{selectedEvent.title}</h3>
+              </div>
+            </div>
+
+            {/* Informasi Detail */}
+            <div className="space-y-3 bg-slate-950/70 p-4 rounded-xl border border-slate-800/80 text-xs">
+              {/* Tanggal & Countdown */}
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                <span className="text-slate-400 flex items-center space-x-1.5">
+                  <Clock className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Pelaksanaan</span>
+                </span>
+                <div className="text-right">
+                  <p className="font-semibold text-slate-200">{selectedEvent.date}</p>
+                  <p className="text-[10px] font-medium text-emerald-400">
+                    {(() => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const evDate = new Date(selectedEvent.date);
+                      evDate.setHours(0, 0, 0, 0);
+                      const diffDays = Math.ceil((evDate - today) / (1000 * 60 * 60 * 24));
+                      if (diffDays === 0) return 'Hari Ini!';
+                      if (diffDays > 0) return `⏳ ${diffDays} Hari Lagi`;
+                      return 'Sudah lewat';
+                    })()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Kategori */}
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                <span className="text-slate-400 flex items-center space-x-1.5">
+                  <Tag className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Kategori</span>
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium text-[11px]">
+                  {selectedEvent.category || 'Sekolah'}
+                </span>
+              </div>
+
+              {/* Catatan / Deskripsi */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-slate-400 flex items-center space-x-1.5">
+                  <FileText className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Catatan / Deskripsi</span>
+                </span>
+                <p className="text-slate-300 bg-slate-900/90 p-3 rounded-lg border border-slate-800/80 leading-relaxed text-xs">
+                  {selectedEvent.note || selectedEvent.description || 'Tidak ada catatan tambahan untuk agenda ini.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Tombol Tutup */}
+            <button
+              onClick={() => setSelectedEvent(null)}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold py-3 rounded-xl transition border border-slate-700"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
