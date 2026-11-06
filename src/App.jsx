@@ -38,6 +38,15 @@ import {
   GraduationCap
 } from 'lucide-react';
 
+// HELPER FORMAT TANGGAL HARIAN (YYYY-MM-DD)
+const getTodayString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const INITIAL_DATA = {
   finance: {
     balance: 0,
@@ -48,8 +57,8 @@ const INITIAL_DATA = {
   planner: {
     sales: [],
     habits: [
-      { id: '1', title: 'Bangun Jam 05.00', completed: false, streak: 0 },
-      { id: '2', title: 'Olahraga 15 Menit', completed: false, streak: 0 }
+      { id: '1', title: 'Bangun Jam 05.00', completed: false, streak: 0, lastResetDate: getTodayString() },
+      { id: '2', title: 'Olahraga 15 Menit', completed: false, streak: 0, lastResetDate: getTodayString() }
     ],
     study: [],
     events: []
@@ -134,9 +143,39 @@ export default function App() {
     return () => unsubscribeDoc();
   }, [currentUser?.uid]);
 
+  // 3. AUTO-RESET HABIT HARIAN (JAM 00.00)
+  useEffect(() => {
+    if (!data?.planner?.habits || data.planner.habits.length === 0) return;
+
+    const today = getTodayString();
+    let needsUpdate = false;
+
+    const updatedHabits = data.planner.habits.map((habit) => {
+      if (habit.lastResetDate !== today) {
+        needsUpdate = true;
+        return {
+          ...habit,
+          completed: false, // Reset status centang
+          lastResetDate: today
+        };
+      }
+      return habit;
+    });
+
+    if (needsUpdate) {
+      updateData((prev) => ({
+        ...prev,
+        planner: {
+          ...prev.planner,
+          habits: updatedHabits
+        }
+      }));
+    }
+  }, [data?.planner?.habits]);
+
   // Form States
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date().toISOString().split('T')[0]);
-  const [eventForm, setEventForm] = useState({ title: '', date: new Date().toISOString().split('T')[0], category: 'Sekolah', note: '' });
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(getTodayString());
+  const [eventForm, setEventForm] = useState({ title: '', date: getTodayString(), category: 'Sekolah', note: '' });
   const [kedisForm, setKedisForm] = useState({ studentName: '', class: '', type: 'Terlambat Masuk Sekolah', dayOccurred: 'Senin', note: '' });
   const [kedisSearch, setKedisSearch] = useState('');
   const [filterBandel, setFilterBandel] = useState(false);
@@ -148,7 +187,7 @@ export default function App() {
     category: 'Makan',
     note: '',
     account: 'cash',
-    date: new Date().toISOString().split('T')[0]
+    date: getTodayString()
   });
   const [wishlistPrice, setWishlistPrice] = useState('');
   const [savingsForm, setSavingsForm] = useState({ title: '', targetAmount: '', deadline: '' });
@@ -221,7 +260,7 @@ export default function App() {
   }, [data?.planner?.sales]);
 
   const todayExpense = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayString();
     return (data?.finance?.transactions || [])
       .filter((t) => t.type === 'expense' && t.date === today)
       .reduce((acc, curr) => acc + Number(curr.amount), 0);
@@ -256,13 +295,13 @@ export default function App() {
       category: finForm.category,
       note: finForm.note,
       account: finForm.account || 'cash',
-      date: finForm.date || new Date().toISOString().split('T')[0]
+      date: finForm.date || getTodayString()
     };
     updateData((prev) => ({
       ...prev,
       finance: { ...prev.finance, transactions: [newTx, ...(prev.finance?.transactions || [])] }
     }));
-    setFinForm({ type: 'expense', amount: '', category: 'Makan', note: '', account: 'cash', date: new Date().toISOString().split('T')[0] });
+    setFinForm({ type: 'expense', amount: '', category: 'Makan', note: '', account: 'cash', date: getTodayString() });
     setModalOpen(null);
   };
 
@@ -309,7 +348,7 @@ export default function App() {
       note: kedisForm.note,
       dayOccurred: kedisForm.dayOccurred,
       status: 'Belum Selesai',
-      date: new Date().toISOString().split('T')[0]
+      date: getTodayString()
     };
     updateData((prev) => ({
       ...prev,
@@ -352,7 +391,7 @@ export default function App() {
       ...prev,
       planner: { ...prev.planner, events: [...(prev.planner?.events || []), newEv] }
     }));
-    setEventForm({ title: '', date: new Date().toISOString().split('T')[0], category: 'Sekolah', note: '' });
+    setEventForm({ title: '', date: getTodayString(), category: 'Sekolah', note: '' });
     setModalOpen(null);
   };
 
@@ -366,7 +405,13 @@ export default function App() {
   const handleAddHabit = (e) => {
     e.preventDefault();
     if (!habitTitleInput.trim()) return;
-    const newHabit = { id: Date.now().toString(), title: habitTitleInput.trim(), completed: false, streak: 0 };
+    const newHabit = {
+      id: Date.now().toString(),
+      title: habitTitleInput.trim(),
+      completed: false,
+      streak: 0,
+      lastResetDate: getTodayString()
+    };
     updateData((prev) => ({
       ...prev,
       planner: { ...prev.planner, habits: [...(prev.planner?.habits || []), newHabit] }
@@ -381,7 +426,13 @@ export default function App() {
       planner: {
         ...prev.planner,
         habits: (prev.planner?.habits || []).map((h) =>
-          h.id === id ? { ...h, completed: !h.completed, streak: !h.completed ? h.streak + 1 : Math.max(0, h.streak - 1) } : h
+          h.id === id
+            ? {
+                ...h,
+                completed: !h.completed,
+                streak: !h.completed ? h.streak + 1 : Math.max(0, h.streak - 1)
+              }
+            : h
         )
       }
     }));
@@ -405,7 +456,7 @@ export default function App() {
       soldQty: 0,
       costPrice: Number(salesForm.costPrice) || 0,
       sellPrice: Number(salesForm.sellPrice) || 0,
-      date: new Date().toISOString().split('T')[0]
+      date: getTodayString()
     };
     updateData((prev) => ({
       ...prev,
@@ -477,7 +528,7 @@ export default function App() {
   const handleExportKedisText = () => {
     let report = `📋 *REKAPITULASI PELANGGARAN SISWA (KEDIS OSIS)*\nTanggal Export: ${new Date().toLocaleDateString('id-ID')}\n\n`;
     (data?.kedis?.violations || []).forEach((v, index) => {
-      report += `${index + 1}. *${v.studentName}* (${v.class})\n   - Pelanggaran: ${v.type}\n   - Hari Kejadian: *Hari ${v.dayOccurred}* (${v.date})\n   - Status: ${v.status}\n   - Catatan: ${v.note || '-'}\n\n`;
+      report += `${index + 1}. *${v.studentName}* (${v.class})\nPelanggaran: ${v.type}\nHari Kejadian: ${v.dayOccurred} (${v.date})\nStatus: ${v.status}\nCatatan: ${v.note || '-'}\n\n`;
     });
     navigator.clipboard.writeText(report);
     alert('Rekapitulasi Kedis OSIS berhasil dicopy ke Clipboard!');
@@ -725,7 +776,6 @@ export default function App() {
           />
         )}
 
-        {/* TAB PROFIL */}
         {activeTab === 'profile' && (
           <ProfileTab currentUser={currentUser} data={data} updateData={updateData} />
         )}
@@ -944,6 +994,7 @@ export default function App() {
         </div>
       )}
 
+      {/* MODAL EDIT LIMIT JAJAN */}
       {modalOpen === 'editLimit' && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
@@ -985,6 +1036,7 @@ export default function App() {
         </div>
       )}
 
+      {/* MODAL TAMBAH HABIT */}
       {modalOpen === 'habit' && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
@@ -1174,6 +1226,7 @@ export default function App() {
         </div>
       )}
 
+      {/* MODAL TARGET NABUNG */}
       {modalOpen === 'savings' && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
@@ -1246,6 +1299,7 @@ export default function App() {
         </div>
       )}
 
+      {/* MODAL JUALAN */}
       {modalOpen === 'sales' && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
@@ -1320,6 +1374,7 @@ export default function App() {
         </div>
       )}
 
+      {/* MODAL TARGET BELAJAR */}
       {modalOpen === 'study' && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
@@ -1393,6 +1448,7 @@ export default function App() {
         </div>
       )}
 
+      {/* MODAL DRAF WHATSAPP */}
       {selectedWaDraft && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
